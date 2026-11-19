@@ -5,7 +5,7 @@ import { ACCEPTED_EXT, ACCEPTED_MIMES } from "./parsers";
 import { storage } from "./storage";
 import { enqueueIndexing } from "./queue";
 
-export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB (Render free tier has 512 MB RAM)
 
 export class UploadError extends Error {
   constructor(msg: string, public status = 400) { super(msg); }
@@ -32,7 +32,7 @@ export async function deleteUserDocument(userId: string, id: string) {
 }
 
 export async function createDocumentFromFile(userId: string, file: File) {
-  if (file.size > MAX_UPLOAD_BYTES) throw new UploadError("File is larger than 20MB");
+  if (file.size > MAX_UPLOAD_BYTES) throw new UploadError("File is larger than 10MB");
   if (!ACCEPTED_MIMES.has(file.type) && !ACCEPTED_EXT.test(file.name)) {
     throw new UploadError("Unsupported file type. Accepted: pdf, docx, csv, md, json, txt");
   }

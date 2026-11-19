@@ -213,6 +213,63 @@ delete it — v4 does not auto-detect JS config files.
 - All API error responses are plain text with user-safe copy; technical
   details (SDK message, status, stack) stay in server logs only.
 
+## Deploying (free-tier demo)
+
+The app runs well as a demo on **Render free tier + Neon + Cloudflare R2**.
+A `render.yaml` blueprint at the repo root automates most of the setup.
+
+### Architecture on free tier
+
+Render's free tier does not offer background workers, so the web service and
+the pg-boss worker run **in one process** via `instrumentation.ts`. The
+service sleeps after 15 min idle and cold-starts in ~1 min on the next
+request. All storage must be external (local disk is ephemeral).
+
+### Setup
+
+**1. Neon (Postgres).** Sign up at [neon.tech](https://neon.tech), create a
+project, and in the SQL editor run `CREATE EXTENSION IF NOT EXISTS vector;`
+then paste in `src/db/migrations/0000_init.sql`. Copy the **pooled**
+connection string (ends in `-pooler.<region>.neon.tech`) — this is your
+`DATABASE_URL`.
+
+**2. Cloudflare R2 (storage).** Sign up at cloudflare.com, enable R2,
+create a private bucket, and generate an **Object Read & Write** API token
+scoped to that bucket. You'll need: Access Key ID, Secret Access Key,
+Bucket name, and the Endpoint URL (`https://<account-id>.r2.cloudflarestorage.com`).
+
+**3. JWT secret.** Run locally once: `openssl rand -base64 32`.
+
+**4. Render.** Push this branch to GitHub, then in the Render dashboard →
+**New → Blueprint** → pick the repo. Render reads `render.yaml`
+automatically. Fill in the secret env vars when prompted:
+
+| Var | Source |
+|---|---|
+| `DATABASE_URL` | Neon pooler URL |
+| `JWT_SECRET` | `openssl rand -base64 32` |
+| `GEMINI_API_KEY` | Google AI Studio |
+| `S3_BUCKET` | R2 bucket name |
+| `S3_ENDPOINT` | R2 endpoint URL |
+| `S3_ACCESS_KEY_ID` | R2 token |
+| `S3_SECRET_ACCESS_KEY` | R2 token |
+
+### Demo-tier limits worth knowing
+
+- **Upload cap is 10 MB.** Render free tier has 512 MB RAM; PDF parsing
+  needs headroom. Change `MAX_UPLOAD_BYTES` in
+  `src/features/documents/server/service.ts` if you move to a paid plan.
+- **Cold starts.** First request after 15 min of inactivity takes ~1 min.
+  Optionally use UptimeRobot to ping `/login` every 5 min — but note Render
+  gives 750 hours/month free, and 24/7 uptime is 720h, so there's little
+  headroom.
+- **Postgres polling.** pg-boss polls every 10 s (instead of its 2 s
+  default) to be gentle on Neon's free tier. Real jobs still fire
+  instantly via Postgres `LISTEN/NOTIFY`.
+- **Neon free tier expires after 30 days of inactivity.** The project
+  gets a 14-day grace period before deletion. For a demo that gets used
+  occasionally, keep an eye on this.
+
 ## Known trade-offs
 
 - **CSV flattening** — small/medium CSVs become `col: value` rows. Great

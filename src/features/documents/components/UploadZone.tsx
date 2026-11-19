@@ -38,7 +38,7 @@ export function UploadZone() {
         <Upload className="h-5 w-5 text-muted" />
       </div>
       <div className="text-sm font-medium mb-1">Drop a document to upload</div>
-      <div className="text-xs text-muted mb-4">PDF, Word, CSV, Markdown, JSON · up to 20MB</div>
+      <div className="text-xs text-muted mb-4">PDF, Word, CSV, Markdown, JSON · up to 10MB</div>
       <input
         ref={inputRef} type="file" className="hidden"
         accept=".pdf,.docx,.doc,.csv,.md,.markdown,.json,.txt"

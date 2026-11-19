@@ -41,7 +41,7 @@ export async function startIndexingWorker(opts: { concurrency?: number } = {}) {
   const boss = await getBoss();
   await boss.work<IndexJob>(
     QUEUE_INDEX,
-    { localConcurrency: opts.concurrency ?? 2, batchSize: 1 },
+    { localConcurrency: opts.concurrency ?? 2, batchSize: 1, pollingIntervalSeconds: 10 },
     async ([job]) => {
       // batchSize=1 → each call gets a single-element array.
       if (!job) return;
